@@ -164,8 +164,9 @@ public class ContainerClassLoaderFactory {
     for (MuleModule muleModule : modules) {
       for (String exportedPackage : muleModule.getExportedPackages()) {
         // Lets artifacts to extend javax packages
-        result.put(exportedPackage, exportedPackage.startsWith("javax.") ? PARENT_FIRST
-            : containerOnlyLookupStrategy);
+        result.put(exportedPackage,
+                   exportedPackage.startsWith("javax.") || exportedPackage.startsWith("org.w3c.dom.") ? PARENT_FIRST
+                       : containerOnlyLookupStrategy);
       }
     }
 
