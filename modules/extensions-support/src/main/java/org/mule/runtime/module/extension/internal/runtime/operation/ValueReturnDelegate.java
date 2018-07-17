@@ -6,6 +6,8 @@
  */
 package org.mule.runtime.module.extension.internal.runtime.operation;
 
+import static org.mule.runtime.core.api.util.StreamingUtils.updateEventForStreaming;
+
 import org.mule.runtime.api.message.Message;
 import org.mule.runtime.api.meta.model.ComponentModel;
 import org.mule.runtime.core.api.MuleContext;
@@ -48,6 +50,7 @@ final class ValueReturnDelegate extends AbstractReturnDelegate {
   public CoreEvent asReturnValue(Object value, ExecutionContextAdapter operationContext) {
     return value instanceof EventedResult
         ? ((EventedResult) value).getEvent()
+            // TODO Rodro Why can this do the equivalent of StreamingUtils#updateEventForStreaming(streamingManager).apply(result); ??
         : CoreEvent.builder(operationContext.getEvent())
             .securityContext(operationContext.getSecurityContext())
             .message(toMessage(value, operationContext)).build();

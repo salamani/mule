@@ -19,11 +19,14 @@ import org.mule.runtime.api.security.SecurityContext;
 import org.mule.runtime.core.internal.event.DefaultEventBuilder;
 import org.mule.runtime.core.internal.message.InternalEvent;
 import org.mule.runtime.core.privileged.event.BaseEventContext;
+import org.mule.runtime.core.privileged.event.PrivilegedEvent;
+import org.mule.runtime.core.privileged.event.PrivilegedEvent.Builder;
 
 import java.io.Serializable;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Represents any data event occurring in the Mule environment. All data sent or received within the mule environment will be
@@ -111,6 +114,14 @@ public interface CoreEvent extends Serializable, Event {
      * @return the builder instance
      */
     Builder message(Message message);
+
+    /**
+     * Set the {@link Function} that generates a {@link Message} to construct {@link CoreEvent} with.
+     *
+     * @param messageFactory the message factory instance.
+     * @return the builder instance
+     */
+    Builder message(Function<BaseEventContext, Message> messageFactory);
 
     /**
      * Set a map of variables. Any existing variables added to the builder will be removed.

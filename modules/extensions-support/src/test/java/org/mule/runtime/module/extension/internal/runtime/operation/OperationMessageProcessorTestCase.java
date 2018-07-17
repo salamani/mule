@@ -73,6 +73,7 @@ import org.mule.runtime.core.internal.el.DefaultExpressionManager;
 import org.mule.runtime.core.internal.el.mvel.MVELExpressionLanguage;
 import org.mule.runtime.core.internal.message.InternalEvent;
 import org.mule.runtime.core.internal.policy.OperationExecutionFunction;
+import org.mule.runtime.core.privileged.event.BaseEventContext;
 import org.mule.runtime.extension.api.declaration.type.DefaultExtensionsTypeLoaderFactory;
 import org.mule.runtime.extension.api.model.ImmutableOutputModel;
 import org.mule.runtime.extension.api.runtime.operation.ExecutionContext;
@@ -462,7 +463,7 @@ public class OperationMessageProcessorTestCase extends AbstractOperationMessageP
     CursorStreamProvider provider = mock(CursorStreamProvider.class);
     final InputStream inputStream = mock(InputStream.class);
 
-    doReturn(provider).when(cursorStreamProviderFactory).of(event, inputStream);
+    doReturn(provider).when(cursorStreamProviderFactory).of(((BaseEventContext)event.getContext()).getRootContext(), inputStream);
     doReturn(provider).when(streamingManager).manage(provider, event);
     when(operationExecutor.execute(any())).thenReturn(just(inputStream));
 

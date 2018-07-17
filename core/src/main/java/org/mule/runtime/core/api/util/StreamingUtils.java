@@ -31,6 +31,7 @@ import org.mule.runtime.core.api.streaming.bytes.CursorStreamProviderFactory;
 import org.mule.runtime.core.api.util.func.CheckedFunction;
 import org.mule.runtime.core.internal.streaming.bytes.ByteArrayCursorStreamProvider;
 import org.mule.runtime.core.internal.streaming.object.ListCursorIteratorProvider;
+import org.mule.runtime.core.privileged.event.BaseEventContext;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -102,7 +103,25 @@ public final class StreamingUtils {
 
   /**
    * If the {@code cursorProviderFactory} accepts the given {@code value}, then the result of invoking
-   * {@link CursorProviderFactory#of(CoreEvent, Object)} is returned. Otherwise, the original {@code value} is.
+   * {@link CursorProviderFactory#of(BaseEventContext, Object)} is returned. Otherwise, the original {@code value} is.
+   *
+   * @param value                 a value which may be a repeatable streaming resource
+   * @param cursorProviderFactory a nullable {@link CursorStreamProviderFactory}
+   * @param eventContext          the root context of the event on which the {@code value} was generated
+   * @return the {@code value} or a {@link CursorProvider}
+   */
+  public static Object streamingContent(Object value, CursorProviderFactory cursorProviderFactory,
+                                        BaseEventContext eventContext) {
+    if (cursorProviderFactory != null && cursorProviderFactory.accepts(value)) {
+      return cursorProviderFactory.of(eventContext, value);
+    } else {
+      return value;
+    }
+  }
+
+  /**
+   * If the {@code cursorProviderFactory} accepts the given {@code value}, then the result of invoking
+   * {@link CursorProviderFactory#of(BaseEventContext, Object)} is returned. Otherwise, the original {@code value} is.
    *
    * @param value                 a value which may be a repeatable streaming resource
    * @param cursorProviderFactory a nullable {@link CursorStreamProviderFactory}
@@ -110,11 +129,7 @@ public final class StreamingUtils {
    * @return the {@code value} or a {@link CursorProvider}
    */
   public static Object streamingContent(Object value, CursorProviderFactory cursorProviderFactory, CoreEvent event) {
-    if (cursorProviderFactory != null && cursorProviderFactory.accepts(value)) {
-      return cursorProviderFactory.of(event, value);
-    } else {
-      return value;
-    }
+    return streamingContent(value, cursorProviderFactory, ((BaseEventContext) event.getContext()).getRootContext());
   }
 
   /**
@@ -268,8 +283,13 @@ public final class StreamingUtils {
       Object payload = value.getValue();
       if (payload instanceof CursorProvider) {
         CursorProvider cursorProvider = streamingManager.manage((CursorProvider) payload, event);
-        DataType dataType = DataType.builder(value.getDataType()).type(cursorProvider.getClass()).build();
-        return new TypedValue<>(cursorProvider, dataType, value.getByteLength());
+
+        if (cursorProvider == payload) {
+          return value;
+        } else {
+          DataType dataType = DataType.builder(value.getDataType()).type(cursorProvider.getClass()).build();
+          return new TypedValue<>(cursorProvider, dataType, value.getByteLength());
+        }
       }
       return value;
     }
@@ -285,10 +305,16 @@ public final class StreamingUtils {
     return event -> {
       TypedValue payload = event.getMessage().getPayload();
       if (payload.getValue() instanceof CursorProvider) {
-        Message message = Message.builder(event.getMessage())
-            .payload(updateTypedValueForStreaming(payload, event, streamingManager))
-            .build();
-        return CoreEvent.builder(event).message(message).build();
+        final TypedValue updatedPayload = updateTypedValueForStreaming(payload, event, streamingManager);
+
+        if (updatedPayload == payload) {
+          return event;
+        } else {
+          Message message = Message.builder(event.getMessage())
+              .payload(updatedPayload)
+              .build();
+          return CoreEvent.builder(event).message(message).build();
+        }
       }
       return event;
     };

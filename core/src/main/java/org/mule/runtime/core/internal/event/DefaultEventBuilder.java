@@ -42,6 +42,7 @@ import org.mule.runtime.core.api.util.CaseInsensitiveHashMap;
 import org.mule.runtime.core.internal.message.DefaultMessageBuilder;
 import org.mule.runtime.core.internal.message.InternalEvent;
 import org.mule.runtime.core.internal.message.InternalMessage;
+import org.mule.runtime.core.internal.message.InternalEvent.Builder;
 import org.mule.runtime.core.privileged.connector.DefaultReplyToHandler;
 import org.mule.runtime.core.privileged.connector.ReplyToHandler;
 import org.mule.runtime.core.privileged.event.BaseEventContext;
@@ -59,13 +60,14 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class DefaultEventBuilder implements InternalEvent.Builder {
 
   private static final Logger logger = LoggerFactory.getLogger(DefaultMessageBuilder.class);
 
   private BaseEventContext context;
-  private Message message;
+  private Function<BaseEventContext, Message> messageFactory;
   private Map<String, TypedValue<?>> flowVariables = new HashMap<>();
   private Map<String, Object> internalParameters = new HashMap<>(4);
   private Error error;
@@ -87,7 +89,7 @@ public class DefaultEventBuilder implements InternalEvent.Builder {
   public DefaultEventBuilder(InternalEvent event) {
     this.context = event.getContext();
     this.originalEvent = event;
-    this.message = event.getMessage();
+    this.messageFactory = e -> event.getMessage();
     this.itemSequenceInfo = event.getItemSequenceInfo();
     this.legacyCorrelationId = event.getLegacyCorrelationId();
     this.replyToHandler = event.getReplyToHandler();
@@ -110,7 +112,15 @@ public class DefaultEventBuilder implements InternalEvent.Builder {
   @Override
   public DefaultEventBuilder message(Message message) {
     requireNonNull(message);
-    this.message = message;
+    this.messageFactory = e -> message;
+    this.modified = true;
+    return this;
+  }
+
+  @Override
+  public Builder message(Function<BaseEventContext, Message> messageFactory) {
+    requireNonNull(messageFactory);
+    this.messageFactory = messageFactory;
     this.modified = true;
     return this;
   }
@@ -231,6 +241,7 @@ public class DefaultEventBuilder implements InternalEvent.Builder {
     if (originalEvent != null && !modified) {
       return originalEvent;
     } else {
+      Message message = messageFactory.apply(context);
       requireNonNull(message);
 
       return new InternalEventImplementation(context, message, flowVariables,
@@ -293,6 +304,8 @@ public class DefaultEventBuilder implements InternalEvent.Builder {
                                         Optional<ItemSequenceInfo> itemSequenceInfo,
                                         Error error,
                                         String legacyCorrelationId, boolean notificationsEnabled) {
+      logger.warn("Event built!!", new Exception());
+
       this.context = context;
       this.session = session;
       this.securityContext = securityContext;

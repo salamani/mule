@@ -282,24 +282,24 @@ public class ModuleFlowProcessingPhase
       SourceResultAdapter adapter = (SourceResultAdapter) message.getPayload().getValue();
       eventBuilder =
           createEventBuilder(sourceLocation, responseCompletion, flowConstruct, adapter.getCorrelationId().orElse(null), message);
-      CoreEvent templateEvent = eventBuilder.build();
 
-      final Result<?, ?> result = adapter.getResult();
-      final Object resultValue = result.getOutput();
+      return eventBuilder.message(eventCtx -> {
+        final Result<?, ?> result = adapter.getResult();
+        final Object resultValue = result.getOutput();
 
-      if (resultValue instanceof Collection && adapter.isCollection()) {
-        message = toMessage(Result.<Collection<Message>, TypedValue>builder()
-            .output(toMessageCollection(new MediaTypeDecoratedResultCollection((Collection<Result>) resultValue,
-                                                                               adapter.getPayloadMediaTypeResolver()),
-                                        adapter.getCursorProviderFactory(),
-                                        templateEvent))
-            .mediaType(result.getMediaType().orElse(ANY))
-            .build());
-      } else {
-        message = toMessage(result, adapter.getMediaType(), adapter.getCursorProviderFactory(), templateEvent);
-      }
+        if (resultValue instanceof Collection && adapter.isCollection()) {
+          return toMessage(Result.<Collection<Message>, TypedValue>builder()
+              .output(toMessageCollection(new MediaTypeDecoratedResultCollection((Collection<Result>) resultValue,
+                                                                                 adapter.getPayloadMediaTypeResolver()),
+                                          adapter.getCursorProviderFactory(),
+                                          eventCtx.getRootContext()))
+              .mediaType(result.getMediaType().orElse(ANY))
+              .build());
+        } else {
+          return toMessage(result, adapter.getMediaType(), adapter.getCursorProviderFactory(), eventCtx.getRootContext());
+        }
 
-      return eventBuilder.message(message).build();
+      }).build();
     }
 
     return createEventBuilder(sourceLocation, responseCompletion, flowConstruct, null, message).build();
@@ -371,6 +371,7 @@ public class ModuleFlowProcessingPhase
 
     @Override
     public Publisher<CoreEvent> apply(Publisher<CoreEvent> publisher) {
+      // TODO Rodro why does this need a child context?
       return from(publisher)
           .flatMapMany(event -> processWithChildContext(event,
                                                         p -> from(p).flatMapMany(e -> template.routeEventAsync(e))

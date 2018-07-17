@@ -197,6 +197,7 @@ class DefaultSourceCallback<T, A> implements SourceCallbackAdapter<T, A> {
     SourceCallbackContextAdapter contextAdapter = (SourceCallbackContextAdapter) context;
     validateNotifications(contextAdapter);
     MessageProcessContext messageProcessContext = processContextSupplier.get();
+    // TODO Rodro: Is this really needed per request?
     Map<String, Object> initialisationParameters = messageSource.getInitialisationParameters();
     MediaType mediaType = resolveMediaType(result, initialisationParameters);
     PayloadMediaTypeResolver payloadMediaTypeResolver = new PayloadMediaTypeResolver(getDefaultEncoding(muleContext),

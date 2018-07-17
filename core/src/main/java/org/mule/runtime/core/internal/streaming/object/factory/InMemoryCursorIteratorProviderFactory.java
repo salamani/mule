@@ -12,6 +12,7 @@ import org.mule.runtime.core.api.functional.Either;
 import org.mule.runtime.core.api.streaming.StreamingManager;
 import org.mule.runtime.core.api.streaming.object.InMemoryCursorIteratorConfig;
 import org.mule.runtime.core.internal.streaming.object.InMemoryCursorIteratorProvider;
+import org.mule.runtime.core.privileged.event.BaseEventContext;
 
 import java.util.Iterator;
 
@@ -35,7 +36,7 @@ public class InMemoryCursorIteratorProviderFactory extends AbstractCursorIterato
    * @return a new {@link CursorIteratorProvider} wrapped in an {@link Either}
    */
   @Override
-  protected Object resolve(Iterator iterator, CoreEvent event) {
+  protected Object resolve(Iterator iterator, BaseEventContext eventContext) {
     InMemoryCursorIteratorProvider inMemoryCursorIteratorProvider = new InMemoryCursorIteratorProvider(iterator, config);
     inMemoryCursorIteratorProvider.setAnnotations(getAnnotations());
     return inMemoryCursorIteratorProvider;

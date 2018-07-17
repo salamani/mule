@@ -22,11 +22,12 @@ import org.mule.runtime.core.internal.event.DefaultEventBuilder;
 import org.mule.runtime.core.internal.message.InternalEvent;
 import org.mule.runtime.core.privileged.connector.ReplyToHandler;
 
-import org.slf4j.MDC;
-
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+
+import org.slf4j.MDC;
 
 /**
  * Allows access to the privileged behavior of the {@link Event} implementation.
@@ -252,6 +253,9 @@ public interface PrivilegedEvent extends CoreEvent {
 
     @Override
     Builder message(Message message);
+
+    @Override
+    Builder message(Function<BaseEventContext, Message> messageFactory);
 
     @Override
     Builder variables(Map<String, ?> variables);
