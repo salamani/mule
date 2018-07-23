@@ -183,6 +183,8 @@
             <groupId>org.mule.common</groupId>
             <artifactId>mule-common</artifactId>
             <version>${project.version}</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/work_jar/mule-common-3.8.4.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
